@@ -9,7 +9,7 @@
 			--bg1:#0f1724; --bg2:#07122b; --card:#071427; --glass:rgba(255,255,255,0.04);
 			--accent-study:#4fd1c5; --accent-break:#60a5fa; --muted:#9aa6b2
 		}
-		html,body{height:100%;}
+		html,body{height:100%；}
 		body{margin:0;font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#f0f7fb;display:flex;align-items:center;justify-content:center;padding:28px;background:radial-gradient(1400px 700px at 8% 12%, rgba(79,209,197,0.10), transparent 8%), radial-gradient(1200px 600px at 92% 88%, rgba(96,165,250,0.09), transparent 10%), linear-gradient(180deg,#071a31,#0b2236);}
 
 			/* subtle animated pattern */
@@ -56,63 +56,63 @@
 	</style>
 </head>
 <body>
-	<div class="card" role="application" aria-label="Pomodoro timer">
+		<div class="card" role="application" aria-label="番茄钟">
 		<div class="header">
 			<div>
-				<div class="title">Pomodoro Timer</div>
-				<div class="subtitle">25 / 5 minute cycles · stores totals locally</div>
+			<div class="title">番茄钟</div>
+			<div class="subtitle">25 / 5 分钟循环 · 本地保存统计</div>
 			</div>
-			<div class="subtitle">Cycle <strong id="cycleCount">0</strong></div>
+			<div class="subtitle">周期 <strong id="cycleCount">0</strong></div>
 		</div>
 
 		<div class="main">
 			<div class="timer-wrap">
 				<div id="display" class="time" aria-live="polite">25:00</div>
-				<div id="status" class="status">Ready</div>
+				<div id="status" class="status">就绪</div>
 
-				<div class="controls">
-					<button id="start" class="btn btn-primary">Start</button>
-					<button id="pause" class="btn btn-ghost" disabled>Pause</button>
-					<button id="skip" class="btn btn-ghost">Skip</button>
-					<button id="reset" class="btn btn-ghost">Reset</button>
-				</div>
+								<div class="controls">
+									<button id="start" class="btn btn-primary">开始</button>
+									<button id="pause" class="btn btn-ghost" disabled>暂停</button>
+									<button id="skip" class="btn btn-ghost">跳过</button>
+									<button id="reset" class="btn btn-ghost">重置</button>
+								</div>
 			</div>
 
 			<div class="totals" aria-live="polite">
-				<h3>Today's totals</h3>
-				<div class="goals" aria-hidden="false">
-					<div id="goal1" class="goal" title="1 hour study goal"><span class="dot">✓</span><span>1 hr</span></div>
-					<div id="goal2" class="goal" title="2 hour study goal"><span class="dot">✓</span><span>2 hr</span></div>
-				</div>
+			<h3>今日统计</h3>
+						<div class="goals" aria-hidden="false">
+							<div id="goal1" class="goal" title="1 小时学习目标"><span class="dot">✓</span><span>1 小时</span></div>
+							<div id="goal2" class="goal" title="2 小时学习目标"><span class="dot">✓</span><span>2 小时</span></div>
+						</div>
 				<div class="row">
-					<div class="label">Study</div>
-					<div class="value" id="todayStudy">0m 0s</div>
+					  <div class="label">学习</div>
+					  <div class="value" id="todayStudy">0m 0s</div>
 				</div>
 				<div class="bars">
 					<div class="bar"><div id="barStudy" class="barFill" style="background:linear-gradient(90deg,var(--accent-study),#06b6d4)"></div></div>
 				</div>
 
 				<div class="row">
-					<div class="label">Break</div>
-					<div class="value" id="todayBreak">0m 0s</div>
+					  <div class="label">休息</div>
+					  <div class="value" id="todayBreak">0m 0s</div>
 				</div>
 				<div class="bars">
 					<div class="bar"><div id="barBreak" class="barFill" style="background:linear-gradient(90deg,var(--accent-break),#3b82f6)"></div></div>
 				</div>
 
 				<div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-					<label style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px"><input id="autoStart" type="checkbox"> Auto-start</label>
-					<label style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-left:8px"><input id="bellEnabled" type="checkbox" checked> Bell</label>
-					<button id="stopBell" class="btn btn-ghost" title="Stop bell sound">Stop Bell</button>
-					<div style="margin-left:auto;color:var(--muted);font-size:13px">Mode: <strong id="modeLabel">Study</strong></div>
+					<label style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px"><input id="autoStart" type="checkbox"> 自动开始</label>
+					<label style="font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-left:8px"><input id="bellEnabled" type="checkbox" checked> 铃声</label>
+					<button id="stopBell" class="btn btn-ghost" title="停止铃声">停止铃声</button>
+					<div style="margin-left:auto;color:var(--muted);font-size:13px">模式： <strong id="modeLabel">学习</strong></div>
 				</div>
 			</div>
 		</div>
 
-		<div class="footer">
-			<div>All data stored locally</div>
-			<div><button id="clearHistory" class="btn btn-ghost">Clear Data</button></div>
-		</div>
+			<div class="footer">
+				<div>所有数据保存在本地</div>
+				<div><button id="clearHistory" class="btn btn-ghost">清除数据</button></div>
+			</div>
 	</div>
 
 	<script>
@@ -157,12 +157,12 @@
 
 			let pomodoroCount = 0;
 
-			function setMode(m){
+					function setMode(m){
 				mode = m;
-				if(mode === 'study') sessionDuration = STUDY_MS; else sessionDuration = SHORT_BREAK_MS;
+						if(mode === 'study') sessionDuration = STUDY_MS; else sessionDuration = SHORT_BREAK_MS;
 				remaining = sessionDuration;
 				perfStart = 0; perfPauseAccum = 0; pauseStart = 0; running = false; updateButtons(); render();
-				modeLabel.textContent = mode === 'study' ? 'Study' : (isLongBreakCandidate() ? 'Long Break' : 'Break');
+						modeLabel.textContent = mode === 'study' ? '学习' : (isLongBreakCandidate() ? '长休息' : '休息');
 			}
 
 			function isLongBreakCandidate(){ return mode === 'break' && pomodoroCount > 0 && (pomodoroCount % 4 === 0); }
@@ -200,7 +200,7 @@
 				running = true;
 				if(!perfStart) perfStart = performance.now();
 				if(pauseStart){ perfPauseAccum += (performance.now() - pauseStart); pauseStart = 0; }
-				updateButtons(); status.textContent = mode === 'study' ? 'Studying…' : 'On break…';
+				updateButtons(); status.textContent = mode === 'study' ? '学习中…' : '休息中…';
 				// if starting fresh, ensure sessionDuration reflects mode (for long break)
 				if(mode === 'break' && pomodoroCount>0 && (pomodoroCount % 4 === 0)) sessionDuration = LONG_BREAK_MS;
 				rafId = requestAnimationFrame(loop);
@@ -211,14 +211,14 @@
 				running = false;
 				pauseStart = performance.now();
 				if(rafId) cancelAnimationFrame(rafId); rafId = null;
-				status.textContent = 'Paused'; updateButtons();
+				status.textContent = '已暂停'; updateButtons();
 				renderDailyTotals();
 			}
 
 			function reset(){
 				if(rafId) cancelAnimationFrame(rafId); rafId = null; running = false; perfStart = 0; perfPauseAccum = 0; pauseStart = 0;
 				remaining = mode === 'study' ? STUDY_MS : SHORT_BREAK_MS; if(mode==='break' && isLongBreakCandidate()) remaining = LONG_BREAK_MS;
-				status.textContent = 'Ready'; updateButtons(); render();
+				status.textContent = '就绪'; updateButtons(); render();
 				renderDailyTotals();
 			}
 
@@ -233,7 +233,14 @@
 				const endTs = new Date(now).toISOString();
 				saveSession(mode, startTs, endTs, elapsedSec);
 				updateDailyTotals(mode, elapsedSec);
-				beep();
+				// play gentle bell only when completed naturally and sessionLength was 25 or 5 minutes
+				const completedLength = sessionDuration; // before switching
+				if(bellToggle && bellToggle.checked && (completedLength === STUDY_MS || completedLength === SHORT_BREAK_MS)){
+					bellGentle();
+				} else {
+					// fallback short beep for other cases
+					beep();
+				}
 
 				// transition
 				if(mode === 'study'){
@@ -245,8 +252,8 @@
 					mode = 'study'; sessionDuration = STUDY_MS;
 				}
 				remaining = sessionDuration; perfStart = 0; perfPauseAccum = 0; pauseStart = 0;
-				modeLabel.textContent = mode === 'study' ? 'Study' : (isLongBreakCandidate() ? 'Long Break' : 'Break');
-				status.textContent = mode === 'study' ? 'Ready to study' : 'Break time';
+				modeLabel.textContent = mode === 'study' ? '学习' : (isLongBreakCandidate() ? '长休息' : '休息');
+				status.textContent = mode === 'study' ? '准备学习' : '休息时间';
 				updateButtons(); render(); renderDailyTotals();
 
 				if(autoStart.checked){ setTimeout(start, 600); }
@@ -268,8 +275,8 @@
 					mode = 'break'; sessionDuration = isLong ? LONG_BREAK_MS : SHORT_BREAK_MS;
 				} else { mode = 'study'; sessionDuration = STUDY_MS; }
 				remaining = sessionDuration; perfStart = 0; perfPauseAccum = 0; pauseStart = 0;
-				modeLabel.textContent = mode === 'study' ? 'Study' : (isLongBreakCandidate() ? 'Long Break' : 'Break');
-				status.textContent = 'Skipped'; render(); renderDailyTotals(); if(autoStart.checked) setTimeout(start, 300);
+				modeLabel.textContent = mode === 'study' ? '学习' : (isLongBreakCandidate() ? '长休息' : '休息');
+				status.textContent = '已跳过'; render(); renderDailyTotals(); if(autoStart.checked) setTimeout(start, 300);
 			}
 
 			// storage helpers
@@ -304,12 +311,49 @@
 
 			function beep(){ try{ const ctx = new (window.AudioContext||window.webkitAudioContext)(); const o = ctx.createOscillator(); const g = ctx.createGain(); o.type='sine'; o.frequency.value = 880; g.gain.value = 0.0001; o.connect(g); g.connect(ctx.destination); g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.02); o.start(); g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 1.2); setTimeout(()=>{ o.stop(); ctx.close(); }, 1300); }catch(e){/* ignore */} }
 
+			// gentle bell with stop capability
+			let _bell = {ctx:null, osc:null, gain:null, timeoutId:null};
+			function stopBell(){
+				try{
+					if(_bell.timeoutId) clearTimeout(_bell.timeoutId);
+					if(_bell.osc){ try{ _bell.gain.exponentialRampToValueAtTime(0.00001, _bell.ctx.currentTime + 0.05); }catch(e){}
+						try{ _bell.osc.stop(); }catch(e){}
+					}
+					if(_bell.ctx){ try{ _bell.ctx.close(); }catch(e){}
+					}
+				}catch(e){}
+				_bell = {ctx:null,osc:null,gain:null,timeoutId:null};
+			}
+
+			function bellGentle(){
+				if(!bellToggle || !bellToggle.checked) return;
+				stopBell();
+				try{
+					const ctx = new (window.AudioContext||window.webkitAudioContext)();
+					const o = ctx.createOscillator();
+					const g = ctx.createGain();
+					o.type = 'sine';
+					o.frequency.value = 720;
+					g.gain.value = 0.0001;
+					o.connect(g); g.connect(ctx.destination);
+					g.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.02);
+					o.start();
+					_bell.ctx = ctx; _bell.osc = o; _bell.gain = g;
+					_bell.timeoutId = setTimeout(()=>{
+						try{ g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.6); }catch(e){}
+						try{ o.stop(); ctx.close(); }catch(e){}
+						_bell = {ctx:null,osc:null,gain:null,timeoutId:null};
+					}, 1200);
+				}catch(e){console.warn('bell failed',e)}
+			}
+
 			// wire events
 			startBtn.addEventListener('click', start);
 			pauseBtn.addEventListener('click', pause);
 			resetBtn.addEventListener('click', reset);
-			skipBtn.addEventListener('click', ()=>{ if(confirm('Skip current session?')) skip(); });
-			clearHistoryBtn.addEventListener('click', ()=>{ if(!confirm('Clear stored sessions and daily totals?')) return; localStorage.removeItem(LS_SESSIONS); localStorage.removeItem(LS_DAILY); renderDailyTotals(); });
+			skipBtn.addEventListener('click', ()=>{ if(confirm('跳过当前会话？')) skip(); });
+			clearHistoryBtn.addEventListener('click', ()=>{ if(!confirm('清除已保存的会话和今日统计？')) return; localStorage.removeItem(LS_SESSIONS); localStorage.removeItem(LS_DAILY); renderDailyTotals(); });
+			if(stopBellBtn) stopBellBtn.addEventListener('click', stopBell);
 
 			// init
 			function init(){ pomodoroCount = 0; setMode('study'); renderDailyTotals(); }
