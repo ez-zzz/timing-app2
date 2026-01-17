@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<title>25 Minute Timer</title>
+	<style>
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+			<meta charset="utf-8" />
+			<meta name="viewport" content="width=device-width,initial-scale=1" />
+			<title>Pomodoro Timer</title>
+			<style>
+				:root{--bg:#0f1724;--card:#0b1220;--accent:#4fd1c5;--muted:#9aa6b2}
+				html,body{height:100%;}
+				body{margin:0;font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#071024 0%,#081426 100%);color:#e6eef6;display:flex;align-items:center;justify-content:center;padding:24px}
+				.app{width:520px;max-width:98%;background:rgba(255,255,255,0.03);border-radius:12px;padding:20px;box-shadow:0 6px 20px rgba(2,6,23,0.7)}
+				.title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+				.title h1{font-size:18px;margin:0}
+				.timer{font-weight:700;font-size:56px;text-align:center;padding:18px 0}
+				.controls{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
+				button{background:var(--card);border:1px solid rgba(255,255,255,0.04);color:var(--accent);padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+				button.secondary{color:var(--muted);background:transparent;border:1px solid rgba(255,255,255,0.02)}
+				.small{font-size:13px;color:var(--muted);text-align:center;margin-bottom:8px}
+				.history{background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;max-height:200px;overflow:auto}
+				.entry{display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px dashed rgba(255,255,255,0.02)}
+				.entry:last-child{border-bottom:0}
+				.muted{color:var(--muted);font-size:12px}
+				.flex{display:flex;gap:8px;align-items:center}
+				.top-row{display:flex;justify-content:space-between;gap:12px;margin-bottom:10px}
+				.panel{background:rgba(255,255,255,0.015);padding:10px;border-radius:8px;flex:1}
+			</style>
+		</head>
+		<body>
+			<div class="app" role="application" aria-label="Pomodoro timer">
+				<div class="title">
+					<h1>Pomodoro Timer</h1>
+					<div class="muted">Auto study/break cycles — records daily totals</div>
+				</div>
+
+					<div class="top-row">
+						<div class="panel" style="display:flex;flex-direction:column;align-items:center;gap:8px">
+							<div style="position:relative;display:flex;align-items:center;justify-content:center">
+								<svg id="progressRing" width="160" height="160" viewBox="0 0 120 120" style="transform:rotate(-90deg)">
+									<defs>
+										<linearGradient id="gStudy" x1="0%" x2="100%">
+											<stop offset="0%" stop-color="#4fd1c5" />
+											<stop offset="100%" stop-color="#06b6d4" />
+										</linearGradient>
+										<linearGradient id="gBreak" x1="0%" x2="100%">
+											<stop offset="0%" stop-color="#60a5fa" />
+											<stop offset="100%" stop-color="#3b82f6" />
+										</linearGradient>
+									</defs>
+									<circle cx="60" cy="60" r="50" stroke="rgba(255,255,255,0.06)" stroke-width="10" fill="none"></circle>
+									<circle id="ring" cx="60" cy="60" r="50" stroke="url(#gStudy)" stroke-width="10" stroke-linecap="round" fill="none" stroke-dasharray="314" stroke-dashoffset="314"></circle>
+								</svg>
+								<div style="position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+									<div id="display" class="timer" aria-live="polite" style="font-size:44px;margin:0">25:00</div>
+									<div class="small" id="status">Ready</div>
+								</div>
+							</div>
+
+							<div class="controls" style="margin-top:4px">
+								<button id="start" class="primary">Start</button>
+								<button id="pause" class="secondary" disabled>Pause</button>
+								<button id="reset" class="secondary">Reset</button>
+								<button id="skip" class="secondary" title="Skip current session">Skip</button>
+							</div>
+
+							<div style="display:flex;justify-content:center;gap:12px;margin-top:8px;align-items:center">
+								<label class="muted" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="autoStart"> Auto-start</label>
+								<div class="muted">Cycle: <span id="cycleCount">0</span></div>
+								<div class="muted">Mode: <strong id="modeLabel">Study</strong></div>
+							</div>
+						</div>
+
+						<div class="panel" style="width:240px">
+							<div style="font-weight:700;margin-bottom:8px">Today's totals</div>
+							<div style="margin-bottom:8px"><div class="muted">Study</div><div style="height:10px;background:rgba(255,255,255,0.03);border-radius:6px;margin-top:6px"><div id="barStudy" style="height:10px;background:linear-gradient(90deg,#4fd1c5,#06b6d4);width:0%;border-radius:6px;transition:width .6s ease"></div></div><div class="muted" style="margin-top:6px"> <span id="todayStudy">0m 0s</span></div></div>
+							<div style="margin-bottom:8px"><div class="muted">Break</div><div style="height:10px;background:rgba(255,255,255,0.03);border-radius:6px;margin-top:6px"><div id="barBreak" style="height:10px;background:linear-gradient(90deg,#60a5fa,#3b82f6);width:0%;border-radius:6px;transition:width .6s ease"></div></div><div class="muted" style="margin-top:6px"> <span id="todayBreak">0m 0s</span></div></div>
+							<div style="margin-top:6px;font-size:12px;color:var(--muted)">All data stored locally in your browser</div>
+						</div>
+					</div>
+
+				<div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0">
+					<div class="muted">History</div>
+					<div class="flex">
+						<button id="clearHistory" class="secondary">Clear</button>
+					</div>
+				</div>
+
+				<div id="history" class="history" aria-live="polite"></div>
+			</div>
+
+			<script>
+				// Pomodoro app
+				// Features:
+				// - 25min study, 5min short break, after 4 studies -> 30min long break
+				// - Auto switch between modes, optional auto-start
+				// - Records each completed session and aggregates daily totals (study/break) in localStorage
+
+				(function(){
+					const STUDY_MS = 25 * 60 * 1000;
+					const SHORT_BREAK_MS = 5 * 60 * 1000;
+					const LONG_BREAK_MS = 30 * 60 * 1000;
+
+					const LS_SESSIONS = 'pomodoroSessions';
+					const LS_DAILY = 'pomodoroDailyTotals';
+
+					const display = document.getElementById('display');
+					const startBtn = document.getElementById('start');
+					const pauseBtn = document.getElementById('pause');
+					const resetBtn = document.getElementById('reset');
+					const skipBtn = document.getElementById('skip');
+					const historyEl = document.getElementById('history');
+					const clearHistoryBtn = document.getElementById('clearHistory');
+					const statusEl = document.getElementById('status');
+					const autoStartCheckbox = document.getElementById('autoStart');
+					const cycleCountEl = document.getElementById('cycleCount');
+					const modeLabel = document.getElementById('modeLabel');
+					const todayStudyEl = document.getElementById('todayStudy');
+					const todayBreakEl = document.getElementById('todayBreak');
+
+					let mode = 'study'; // 'study' or 'break'
+					let remaining = STUDY_MS;
+					let timerId = null;
+					let endTs = null;
+					let sessionStart = null;
+					let pomodoroCount = 0; // count of completed study sessions in current cycle
+
+					function msToLabel(ms){
+						const s = Math.max(0, Math.round(ms/1000));
+						const m = Math.floor(s/60); const sec = s%60;
+						return `${m}:${String(sec).padStart(2,'0')}`;
+					}
+
+					function render(){
+						display.textContent = msToLabel(remaining);
+						cycleCountEl.textContent = pomodoroCount;
+						modeLabel.textContent = (mode==='study')? 'Study' : (nextIsLongBreakCandidate() ? 'Long Break' : 'Break');
+					}
+
+					function tick(){
+						const now = Date.now();
+						remaining = Math.max(0, endTs - now);
+						render();
+						if(remaining <= 0){
+							finishSession();
+						}
+					}
+
+					function startTimer(){
+						if(timerId) return;
+						sessionStart = sessionStart || Date.now();
+						endTs = Date.now() + remaining;
+						timerId = setInterval(tick, 250);
+						startBtn.textContent = 'Running'; startBtn.disabled = true; pauseBtn.disabled = false;
+						statusEl.textContent = `${mode==='study'?'Studying':'On break'}...`;
+					}
+
+					function pauseTimer(){
+						if(!timerId) return;
+						clearInterval(timerId); timerId = null;
+						remaining = Math.max(0, endTs - Date.now());
+						startBtn.textContent = 'Resume'; startBtn.disabled = false; pauseBtn.disabled = true;
+						statusEl.textContent = 'Paused';
+					}
+
+					function resetTimer(){
+						if(timerId){clearInterval(timerId); timerId = null;}
+						setMode(mode); // resets remaining to mode default
+						sessionStart = null; startBtn.textContent = 'Start'; startBtn.disabled = false; pauseBtn.disabled = true; statusEl.textContent = 'Reset';
+					}
+
+					function setMode(newMode){
+						mode = newMode;
+						if(mode==='study') remaining = STUDY_MS; else {
+							// decide short vs long break on demand when starting next
+							remaining = SHORT_BREAK_MS;
+						}
+						sessionStart = null; render();
+					}
+
+					function nextIsLongBreakCandidate(){
+						// if study finished and pomodoroCount % 4 === 0 -> next break should be long
+						return (mode === 'break' && pomodoroCount % 4 === 0 && pomodoroCount>0);
+					}
+
+					function finishSession(){
+						// stop timer, record session, switch mode
+						if(timerId){clearInterval(timerId); timerId = null;}
+						const end = Date.now();
+						const start = sessionStart || (end - ( (mode==='study')?STUDY_MS:SHORT_BREAK_MS ));
+						const elapsedSec = Math.round(((mode==='study')?STUDY_MS:SHORT_BREAK_MS - 0 + 0)/1000);
+						// Actually compute elapsed from start/end
+						const actualElapsedSec = Math.max(0, Math.round((end - start)/1000));
+						saveSession(mode === 'study' ? 'study' : 'break', start, end, actualElapsedSec);
+						// update daily totals
+						updateDailyTotals(mode === 'study' ? 'study' : 'break', actualElapsedSec);
+						// audible
+						beep();
+
+						// switch
+						if(mode === 'study'){
+							pomodoroCount++;
+							// after study -> break: determine short/long
+							const isLong = (pomodoroCount % 4 === 0);
+							mode = 'break';
+							remaining = isLong ? LONG_BREAK_MS : SHORT_BREAK_MS;
+						} else {
+							// after break -> study
+							mode = 'study';
+							remaining = STUDY_MS;
+						}
+
+						// render and optionally auto-start
+						render();
+						statusEl.textContent = (mode==='study')? 'Ready to study' : 'Break time';
+						startBtn.textContent = 'Start'; startBtn.disabled = false; pauseBtn.disabled = true;
+
+						renderHistory();
+						renderDailyTotals();
+
+						if(autoStartCheckbox.checked){
+							// small timeout to let UI update
+							setTimeout(()=>{ startTimer(); }, 600);
+						}
+					}
+
+					function skipCurrent(){
+						// treat as finished with remaining time counted as 0 for this session
+						// We'll record the elapsed time so far
+						if(timerId){clearInterval(timerId); timerId = null;}
+						const end = Date.now();
+						const start = sessionStart || (end - ( (mode==='study')?STUDY_MS:SHORT_BREAK_MS ));
+						const actualElapsedSec = Math.max(0, Math.round((end - start)/1000));
+						saveSession(mode === 'study' ? 'study' : 'break', start, end, actualElapsedSec);
+						updateDailyTotals(mode === 'study' ? 'study' : 'break', actualElapsedSec);
+						// switch to next mode same as finish
+						if(mode === 'study'){
+							pomodoroCount++;
+							const isLong = (pomodoroCount % 4 === 0);
+							mode = 'break'; remaining = isLong ? LONG_BREAK_MS : SHORT_BREAK_MS;
+						} else { mode = 'study'; remaining = STUDY_MS; }
+						render(); renderHistory(); renderDailyTotals();
+						if(autoStartCheckbox.checked){ setTimeout(()=>{ startTimer(); }, 300); }
+					}
+
+					// Storage: sessions + daily totals
+					function loadSessions(){ try{ const r = localStorage.getItem(LS_SESSIONS); return r?JSON.parse(r):[] }catch(e){return[]} }
+					function saveSessions(s){ try{ localStorage.setItem(LS_SESSIONS, JSON.stringify(s)); }catch(e){console.warn(e)} }
+					function saveSession(type, startTs, endTs, durationSec){
+						const sessions = loadSessions();
+						sessions.unshift({type, start:new Date(startTs).toISOString(), end:new Date(endTs).toISOString(), durationSec});
+						if(sessions.length>500) sessions.length = 500;
+						saveSessions(sessions);
+					}
+
+					function loadDaily(){ try{ const r = localStorage.getItem(LS_DAILY); return r?JSON.parse(r):{} }catch(e){return{}} }
+					function saveDaily(d){ try{ localStorage.setItem(LS_DAILY, JSON.stringify(d)); }catch(e){console.warn(e)} }
+					function updateDailyTotals(type, durationSec){
+						const d = loadDaily();
+						const key = (new Date()).toISOString().slice(0,10); // YYYY-MM-DD
+						if(!d[key]) d[key] = {study:0, break:0};
+						if(type==='study') d[key].study += durationSec; else d[key].break += durationSec;
+						saveDaily(d);
+					}
+
+					function renderDailyTotals(){
+						const d = loadDaily();
+						const key = (new Date()).toISOString().slice(0,10);
+						const todays = d[key] || {study:0, break:0};
+						todayStudyEl.textContent = formatSecLabel(todays.study);
+						todayBreakEl.textContent = formatSecLabel(todays.break);
+					}
+
+					function formatSecLabel(sec){ const m = Math.floor(sec/60); const s = sec%60; return `${m}m ${s}s`; }
+
+					function renderHistory(){
+						const list = loadSessions();
+						if(list.length===0){ historyEl.innerHTML = '<div class="muted">No sessions yet</div>'; return }
+						historyEl.innerHTML = '';
+						for(const s of list){
+							const div = document.createElement('div'); div.className='entry';
+							const left = document.createElement('div');
+							left.innerHTML = `<div style="font-weight:600">${new Date(s.start).toLocaleString()}</div><div class="muted" style="margin-top:4px">${new Date(s.end).toLocaleTimeString()}</div>`;
+							const right = document.createElement('div'); right.style.textAlign='right';
+							right.innerHTML = `<div style="font-weight:700">${formatDuration(s.durationSec)}</div><div class="muted">${s.type}</div>`;
+							div.appendChild(left); div.appendChild(right); historyEl.appendChild(div);
+						}
+					}
+
+					function formatDuration(sec){ const m = Math.floor(sec/60); const s = sec%60; return `${m}m ${s}s`; }
+
+					// Beep
+					function beep(){ try{ const ctx = new (window.AudioContext||window.webkitAudioContext)(); const o = ctx.createOscillator(); const g = ctx.createGain(); o.type='sine'; o.frequency.value = 880; g.gain.value = 0.001; o.connect(g); g.connect(ctx.destination); g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02); o.start(); g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 1.2); setTimeout(()=>{o.stop();ctx.close();}, 1300); }catch(e){console.warn('beep failed',e)} }
+
+					// Events
+					startBtn.addEventListener('click', ()=>{ if(timerId) return; startTimer(); });
+					pauseBtn.addEventListener('click', ()=>{ pauseTimer(); });
+					resetBtn.addEventListener('click', ()=>{ resetTimer(); });
+					skipBtn.addEventListener('click', ()=>{ if(confirm('Skip current session?')) skipCurrent(); });
+					clearHistoryBtn.addEventListener('click', ()=>{ if(!confirm('Clear all saved sessions and daily totals?')) return; localStorage.removeItem(LS_SESSIONS); localStorage.removeItem(LS_DAILY); renderHistory(); renderDailyTotals(); });
+
+					// initialize
+					function init(){
+						mode = 'study'; remaining = STUDY_MS; sessionStart = null; pomodoroCount = 0;
+						render(); renderHistory(); renderDailyTotals();
+					}
+
+					init();
+				})();
+			</script>
+		</body>
+		</html>
