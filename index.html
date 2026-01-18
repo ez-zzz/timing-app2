@@ -19,6 +19,8 @@
 		.card{width:720px;max-width:96%;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:14px;padding:22px;box-shadow:0 10px 40px rgba(2,6,23,0.6);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.03)}
 
 		.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+	    .help-btn{background:transparent;border:1px solid rgba(255,255,255,0.05);color:var(--muted);padding:6px 10px;border-radius:8px;cursor:pointer;font-size:13px}
+	    .help-btn:hover{color:#e6eef6;border-color:rgba(255,255,255,0.12)}
 		.title{font-weight:700;font-size:18px}
 		.subtitle{color:var(--muted);font-size:13px}
 
@@ -56,10 +58,31 @@
 
 		/* calendar styles */
 		#calendar{padding:6px}
+		#calendarHeader{padding:6px;margin-bottom:6px}
+		.cal-weekday{width:32px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)}
 		.cal-day{width:32px;height:32px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--muted);background:transparent}
 		.cal-day.today{border:1px solid rgba(255,255,255,0.06)}
 		.cal-day.hasData{background:rgba(255,255,255,0.02);color:#e6eef6}
 		.cal-day.selected{outline:2px solid rgba(79,209,197,0.2)}
+
+		/* help modal / slides */
+		/* intro overlay shown on first load */
+		.intro-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(2,6,23,0.85),rgba(2,6,23,0.6));backdrop-filter:blur(6px);opacity:1;pointer-events:auto}
+		.intro-modal{width:760px;max-width:94%;background:linear-gradient(180deg,#07202a,#052833);border-radius:12px;padding:22px;color:#e6eef6;box-shadow:0 20px 60px rgba(2,6,23,0.7);border:1px solid rgba(255,255,255,0.04)}
+		.intro-modal h1{margin:0 0 6px 0;font-size:28px}
+		.intro-body{color:var(--muted);line-height:1.5;margin-top:8px;white-space:pre-line}
+		.help-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.6);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .2s}
+		.help-overlay.open{opacity:1;pointer-events:auto}
+		.help-modal{width:720px;max-width:92%;background:linear-gradient(180deg,#041622,#022532);border-radius:12px;padding:18px;color:#e6eef6;box-shadow:0 12px 40px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+		.help-slides{overflow:hidden;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);}
+		.help-track{display:flex;transition:transform .36s cubic-bezier(.2,.9,.2,1);width:100%}
+		.help-slide{min-width:100%;padding:18px;box-sizing:border-box}
+		.help-slide h3{margin:0 0 8px 0}
+		.help-controls{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+		.help-nav{display:flex;gap:8px}
+		.help-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.06)}
+		.help-dot.active{background:var(--accent-study)}
+		.close-help{background:transparent;border:0;color:var(--muted);cursor:pointer}
 	</style>
 </head>
 <body>
@@ -69,7 +92,10 @@
 			<div class="title">番茄钟</div>
 			<div class="subtitle">25 / 5 分钟循环 · 本地保存统计</div>
 			</div>
-			<div class="subtitle">周期 <strong id="cycleCount">0</strong></div>
+	      <div style="display:flex;align-items:center;gap:8px">
+	        <div class="subtitle">周期 <strong id="cycleCount">0</strong></div>
+	        <button id="helpBtn" class="help-btn">什么是番茄工作法</button>
+	      </div>
 		</div>
 
 		<div class="main">
@@ -117,6 +143,7 @@
 							<button id="calNext" class="btn btn-ghost">›</button>
 						</div>
 					</div>
+					<div id="calendarHeader" style="display:grid;grid-template-columns:repeat(7,32px);gap:6px;justify-content:center;margin-bottom:6px"></div>
 					<div id="calendar" style="display:grid;grid-template-columns:repeat(7,32px);gap:6px;justify-content:center"></div>
 					<div id="selectedDay" style="margin-top:8px;color:var(--muted);font-size:13px">选择某一日期查看详细统计</div>
 				</div>
@@ -135,6 +162,39 @@
 				<div><button id="clearHistory" class="btn btn-ghost">清除数据</button></div>
 			</div>
 	</div>
+
+	<!-- Help modal: PPT-like slides explaining 番茄工作法 -->
+	<div id="helpOverlay" class="help-overlay" aria-hidden="true">
+	  <div class="help-modal" role="dialog" aria-modal="true" aria-label="什么是番茄工作法">
+	    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+	      <div style="font-weight:800">什么是番茄工作法</div>
+	      <button id="closeHelp" class="close-help">关闭 ✕</button>
+	    </div>
+	    <div class="help-slides">
+	      <div id="helpTrack" class="help-track">
+	        <!-- slides will be injected here -->
+	      </div>
+	    </div>
+	    <div class="help-controls">
+	      <div class="help-nav" id="helpDots"></div>
+	      <div style="display:flex;gap:8px">
+	        <button id="helpPrev" class="btn btn-ghost">上一步</button>
+	        <button id="helpNext" class="btn btn-primary">下一步</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+
+		<!-- Intro overlay shown on open (starts the app) -->
+		<div id="introOverlay" class="intro-overlay" aria-hidden="false">
+		  <div class="intro-modal" role="dialog" aria-modal="true" aria-label="开始专注">
+		    <h1>开始专注</h1>
+		    <div id="introContent" class="intro-body">正在加载说明…</div>
+		    <div style="display:flex;justify-content:flex-end;margin-top:12px;gap:8px">
+		      <button id="startFocusBtn" class="btn btn-primary">开始专注</button>
+		    </div>
+		  </div>
+		</div>
 
 	<script>
 		// High-precision Pomodoro timer using performance.now() + rAF for accurate timing
@@ -378,9 +438,13 @@
 			function renderCalendar(){
 				if(!calEl) return;
 				calEl.innerHTML = '';
-				// compute start weekday using Beijing midnight for the 1st
+				// render weekday header (Monday-first)
+				const header = document.getElementById('calendarHeader');
+				if(header){ header.innerHTML = ''; const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']; labels.forEach(l=>{ const h = document.createElement('div'); h.className='cal-weekday'; h.textContent = l; header.appendChild(h); }); }
+				// compute start weekday using Beijing midnight for the 1st, convert to Monday-first index
 				const first = new Date(`${calYear}-${String(calMonth+1).padStart(2,'0')}-01T00:00:00+08:00`);
-				const startWeekday = first.getUTCDay(); // weekday for Beijing local
+				const startWeekdayRaw = first.getUTCDay(); // 0=Sun..6=Sat
+				const startWeekday = (startWeekdayRaw + 6) % 7; // convert so Monday=0
 				const days = new Date(calYear, calMonth+1, 0).getDate();
 				// show month label
 				calMonthLabel.textContent = `${calYear}年 ${calMonth+1}月`;
@@ -449,6 +513,75 @@
 					}, 1200);
 				}catch(e){console.warn('bell failed',e)}
 			}
+
+				// Help modal / slides logic
+				const helpBtn = document.getElementById('helpBtn');
+				const helpOverlay = document.getElementById('helpOverlay');
+				const helpTrack = document.getElementById('helpTrack');
+				const helpDots = document.getElementById('helpDots');
+				const helpPrev = document.getElementById('helpPrev');
+				const helpNext = document.getElementById('helpNext');
+				const closeHelp = document.getElementById('closeHelp');
+				let helpIndex = 0;
+				const slides = [
+					{title:'番茄工作法简介',body:'番茄工作法是一种时间管理方法：专注一段时间(通常25分钟)，然后短暂休息(通常5分钟)。每完成4个番茄钟后，进行一次较长的休息。'},
+					{title:'如何使用本计时器',body:'点击“开始”开始学习计时；计时结束后会自动记录学习或休息时长。可开启“自动开始”让下一个会话自动运行。'},
+					{title:'为什么有效',body:'短时专注能减少分心，提高注意力；定期休息可恢复精力并防止疲劳。分块工作法让大任务变得可管理。'},
+					{title:'小贴士',body:'1) 在每个番茄钟开始前写下要完成的任务。\n2) 休息时离开屏幕做伸展。\n3) 若被打断，记录并在下一个番茄钟继续。'},
+					{title:'开始行动',body:'现在就开始一个25分钟番茄钟，试试看效果！你可以在设置中开启或关闭铃声与自动开始。'}
+				];
+
+				function renderHelpSlides(){
+					helpTrack.innerHTML = '';
+					helpDots.innerHTML = '';
+					slides.forEach((s, i)=>{
+						const slide = document.createElement('div'); slide.className = 'help-slide';
+						slide.innerHTML = `<h3>${s.title}</h3><div style="white-space:pre-line;color:var(--muted)">${s.body}</div>`;
+						helpTrack.appendChild(slide);
+						const dot = document.createElement('div'); dot.className='help-dot'; if(i===helpIndex) dot.classList.add('active'); helpDots.appendChild(dot);
+					});
+					helpTrack.style.transform = `translateX(-${helpIndex*100}%)`;
+				}
+
+				function openHelp(idx=0){ helpIndex = idx; renderHelpSlides(); helpOverlay.classList.add('open'); helpOverlay.setAttribute('aria-hidden','false'); helpNext.focus(); }
+				function closeHelpModal(){ helpOverlay.classList.remove('open'); helpOverlay.setAttribute('aria-hidden','true'); helpBtn.focus(); }
+				function prevHelp(){ if(helpIndex>0){ helpIndex--; helpTrack.style.transform = `translateX(-${helpIndex*100}%)`; updateDots(); } }
+				function nextHelp(){ if(helpIndex < slides.length-1){ helpIndex++; helpTrack.style.transform = `translateX(-${helpIndex*100}%)`; updateDots(); } else { closeHelpModal(); } }
+				function updateDots(){ Array.from(helpDots.children).forEach((d,i)=> d.classList.toggle('active', i===helpIndex)); }
+
+				helpBtn && helpBtn.addEventListener('click', ()=> openHelp(0));
+				helpPrev && helpPrev.addEventListener('click', prevHelp);
+				helpNext && helpNext.addEventListener('click', nextHelp);
+				closeHelp && closeHelp.addEventListener('click', closeHelpModal);
+				helpOverlay && helpOverlay.addEventListener('click', (e)=>{ if(e.target===helpOverlay) closeHelpModal(); });
+				document.addEventListener('keydown', (e)=>{
+					if(helpOverlay.classList.contains('open')){
+						if(e.key === 'Escape') closeHelpModal();
+						if(e.key === 'ArrowLeft') prevHelp();
+						if(e.key === 'ArrowRight') nextHelp();
+					}
+				});
+
+				// Render intro overlay content using the same slides content
+				const introOverlay = document.getElementById('introOverlay');
+				const introContent = document.getElementById('introContent');
+				const startFocusBtn = document.getElementById('startFocusBtn');
+				function renderIntroFromSlides(){
+					if(!introContent) return;
+					let html = '';
+					slides.forEach(s=>{ html += `<div style="margin-bottom:10px"><h3 style="margin:0 0 6px 0">${s.title}</h3><div style="color:var(--muted);white-space:pre-line">${s.body}</div></div>` });
+					introContent.innerHTML = html;
+				}
+				function closeIntro(){ if(introOverlay){ introOverlay.style.display='none'; introOverlay.setAttribute('aria-hidden','true'); startBtn.focus(); } }
+				// wire intro start button
+				startFocusBtn && startFocusBtn.addEventListener('click', ()=>{ closeIntro(); });
+				// allow Esc or Enter to close intro
+				document.addEventListener('keydown', (e)=>{
+					if(introOverlay && introOverlay.style.display !== 'none'){
+						if(e.key === 'Escape' || e.key === 'Enter') closeIntro();
+					}
+				});
+				renderIntroFromSlides();
 
 			// wire events
 			startBtn.addEventListener('click', start);
