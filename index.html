@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<title>Pomodoro — Timing</title>
+		<title>番茄钟</title>
 	<style>
 		:root{
 			--bg1:#0f1724; --bg2:#07122b; --card:#071427; --glass:rgba(255,255,255,0.04);
@@ -53,6 +53,13 @@
 		.footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;color:var(--muted);font-size:13px}
 
 		@media (max-width:720px){ .main{flex-direction:column-reverse} .totals{width:100%} .time{font-size:48px} }
+
+		/* calendar styles */
+		#calendar{padding:6px}
+		.cal-day{width:32px;height:32px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--muted);background:transparent}
+		.cal-day.today{border:1px solid rgba(255,255,255,0.06)}
+		.cal-day.hasData{background:rgba(255,255,255,0.02);color:#e6eef6}
+		.cal-day.selected{outline:2px solid rgba(79,209,197,0.2)}
 	</style>
 </head>
 <body>
@@ -98,6 +105,20 @@
 				</div>
 				<div class="bars">
 					<div class="bar"><div id="barBreak" class="barFill" style="background:linear-gradient(90deg,var(--accent-break),#3b82f6)"></div></div>
+				</div>
+
+				<!-- calendar and controls -->
+				<div id="calendarWrap" style="margin-top:8px">
+					<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+						<div style="font-weight:700">按日统计</div>
+						<div style="display:flex;gap:6px;align-items:center">
+							<button id="calPrev" class="btn btn-ghost">‹</button>
+							<div id="calMonthLabel" style="min-width:120px;text-align:center;color:var(--muted)"></div>
+							<button id="calNext" class="btn btn-ghost">›</button>
+						</div>
+					</div>
+					<div id="calendar" style="display:grid;grid-template-columns:repeat(7,32px);gap:6px;justify-content:center"></div>
+					<div id="selectedDay" style="margin-top:8px;color:var(--muted);font-size:13px">选择某一日期查看详细统计</div>
 				</div>
 
 				<div style="display:flex;gap:8px;align-items:center;margin-top:6px">
@@ -225,14 +246,14 @@
 			function finishSession(){
 				// stop and commit session
 				if(rafId) cancelAnimationFrame(rafId); rafId = null; running = false;
-				// compute elapsed in seconds
-				const elapsedMs = sessionDuration - remaining;
+				// compute elapsed in milliseconds using performance.now() for best accuracy
+				const elapsedMs = perfStart ? Math.max(0, (performance.now() - perfStart - perfPauseAccum)) : Math.max(0, sessionDuration - remaining);
 				const elapsedSec = Math.max(0, Math.round(elapsedMs/1000));
 				const now = Date.now();
 				const startTs = new Date(now - elapsedMs).toISOString();
 				const endTs = new Date(now).toISOString();
 				saveSession(mode, startTs, endTs, elapsedSec);
-				updateDailyTotals(mode, elapsedSec);
+				updateDailyTotals(mode, elapsedSec, now, now - elapsedMs);
 				// play gentle bell only when completed naturally and sessionLength was 25 or 5 minutes
 				const completedLength = sessionDuration; // before switching
 				if(bellToggle && bellToggle.checked && (completedLength === STUDY_MS || completedLength === SHORT_BREAK_MS)){
@@ -266,7 +287,7 @@
 				const now = Date.now();
 				const startTs = new Date(now - elapsedMs).toISOString();
 				saveSession(mode, startTs, new Date().toISOString(), elapsedSec);
-				updateDailyTotals(mode, elapsedSec);
+				updateDailyTotals(mode, elapsedSec, now, now - elapsedMs);
 				// switch mode same as finish but don't auto-start here (respect autoStart below)
 				if(running && rafId) cancelAnimationFrame(rafId); rafId = null; running = false;
 				if(mode === 'study'){
@@ -282,9 +303,28 @@
 			// storage helpers
 			function loadDaily(){ try{ const r = localStorage.getItem(LS_DAILY); return r?JSON.parse(r):{} }catch(e){return{}} }
 			function saveDaily(d){ try{ localStorage.setItem(LS_DAILY, JSON.stringify(d)); }catch(e){console.warn(e)} }
-			function updateDailyTotals(type, durationSec){ const d = loadDaily(); const key = (new Date()).toISOString().slice(0,10); if(!d[key]) d[key] = {study:0,break:0}; if(type==='study') d[key].study += durationSec; else d[key].break += durationSec; saveDaily(d); renderDailyTotals(); }
+			// update daily totals and split across Beijing days if session crosses midnight
+			// startMs and endMs are epoch ms. If startMs omitted, it's computed from endMs - durationSec*1000
+			function updateDailyTotals(type, durationSec, endMs, startMs){
+				const d = loadDaily();
+				if(!endMs) endMs = Date.now();
+				if(!startMs) startMs = endMs - Math.round(durationSec*1000);
+				let s = startMs;
+				while(s < endMs){
+					const dayKey = dayKeyForMs(s);
+					// Beijing midnight for dayKey -> parse as local instant with +08:00
+					const dayStartMs = Date.parse(`${dayKey}T00:00:00+08:00`);
+					const nextDayStart = dayStartMs + 24*60*60*1000;
+					const chunkEnd = Math.min(endMs, nextDayStart);
+					const chunkSec = Math.round((chunkEnd - s)/1000);
+					if(!d[dayKey]) d[dayKey] = {study:0,break:0};
+					d[dayKey][type] += chunkSec;
+					s = chunkEnd;
+				}
+				saveDaily(d); renderDailyTotals();
+			}
 			function renderDailyTotals(){
-				const d = loadDaily(); const key = (new Date()).toISOString().slice(0,10); const stored = d[key] || {study:0,break:0};
+				const d = loadDaily(); const key = dayKeyForMs(Date.now()); const stored = d[key] || {study:0,break:0};
 				// include live elapsed for the currently running/paused session
 				const liveMs = getElapsedMs(); const liveSec = Math.max(0, Math.round(liveMs/1000));
 				let displayStudy = stored.study; let displayBreak = stored.break;
@@ -303,11 +343,74 @@
 				const GOAL1 = 3600; const GOAL2 = 7200;
 				if(displayStudy >= GOAL1) goal1El.classList.add('completed'); else goal1El.classList.remove('completed');
 				if(displayStudy >= GOAL2) goal2El.classList.add('completed'); else goal2El.classList.remove('completed');
+				// refresh calendar to show per-day markers
+				renderCalendar();
 			}
 
 			function loadSessions(){ try{ const r = localStorage.getItem(LS_SESSIONS); return r?JSON.parse(r):[] }catch(e){return[]} }
 			function saveSessions(s){ try{ localStorage.setItem(LS_SESSIONS, JSON.stringify(s)); }catch(e){console.warn(e)} }
 			function saveSession(type,startIso,endIso,durationSec){ const s = loadSessions(); s.unshift({type,start:startIso,end:endIso,durationSec}); if(s.length>500) s.length=500; saveSessions(s); }
+
+			// Calendar: show month grid with per-day totals (use Beijing/Asia/Shanghai timezone)
+			const calEl = document.getElementById('calendar');
+			const calMonthLabel = document.getElementById('calMonthLabel');
+			const calPrev = document.getElementById('calPrev');
+			const calNext = document.getElementById('calNext');
+			const selectedDayEl = document.getElementById('selectedDay');
+			// helper to produce YYYY-MM-DD for Asia/Shanghai timezone
+			function dayKeyForMs(ms){
+				try{
+					return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' }).format(new Date(ms));
+				}catch(e){
+					// fallback: compute by shifting to +08:00
+					const beijing = new Date(ms + 8*60*60*1000);
+					const y = beijing.getUTCFullYear(); const m = String(beijing.getUTCMonth()+1).padStart(2,'0'); const d = String(beijing.getUTCDate()).padStart(2,'0');
+					return `${y}-${m}-${d}`;
+				}
+			}
+			// initialize calendar month/year from Beijing today
+			const _todayKey = dayKeyForMs(Date.now()).split('-');
+			let calYear = Number(_todayKey[0]);
+			let calMonth = Number(_todayKey[1]) - 1; // 0-based
+
+			function formatKey(y,m,d){ const mm = String(m+1).padStart(2,'0'); const dd = String(d).padStart(2,'0'); return `${y}-${mm}-${dd}` }
+
+			function renderCalendar(){
+				if(!calEl) return;
+				calEl.innerHTML = '';
+				// compute start weekday using Beijing midnight for the 1st
+				const first = new Date(`${calYear}-${String(calMonth+1).padStart(2,'0')}-01T00:00:00+08:00`);
+				const startWeekday = first.getUTCDay(); // weekday for Beijing local
+				const days = new Date(calYear, calMonth+1, 0).getDate();
+				// show month label
+				calMonthLabel.textContent = `${calYear}年 ${calMonth+1}月`;
+				const data = loadDaily();
+				// fill leading empty cells
+				for(let i=0;i<startWeekday;i++){ const empty = document.createElement('div'); empty.className='cal-day'; calEl.appendChild(empty); }
+				// identify Beijing today
+				const beijingTodayParts = dayKeyForMs(Date.now()).split('-'); const by = Number(beijingTodayParts[0]); const bm = Number(beijingTodayParts[1])-1; const bd = Number(beijingTodayParts[2]);
+				for(let d=1; d<=days; d++){
+					const key = formatKey(calYear, calMonth, d);
+					const cell = document.createElement('div'); cell.className='cal-day';
+					const stored = data[key] || {study:0,break:0};
+					if(stored.study || stored.break) cell.classList.add('hasData');
+					if(by===calYear && bm===calMonth && bd===d) cell.classList.add('today');
+					cell.innerHTML = `<div style="font-size:11px;font-weight:700">${d}</div><div style="font-size:9px;margin-top:2px;line-height:1">${Math.floor(stored.study/60)}m</div>`;
+					cell.addEventListener('click', ()=>{ selectDay(key, d, stored); document.querySelectorAll('.cal-day').forEach(c=>c.classList.remove('selected')); cell.classList.add('selected'); });
+					calEl.appendChild(cell);
+				}
+				// auto-select today if visible
+				const todayCell = calEl.querySelector('.cal-day.today');
+				if(todayCell){ todayCell.click(); }
+			}
+
+			function selectDay(key, d, stored){
+				selectedDayEl.innerHTML = `<div style="font-weight:700">${key}</div><div style="margin-top:6px">学习：<strong>${formatSecLabel(stored.study)}</strong></div><div style="margin-top:4px">休息：<strong>${formatSecLabel(stored.break)}</strong></div>`;
+			}
+
+			if(calPrev) calPrev.addEventListener('click', ()=>{ calMonth--; if(calMonth<0){ calMonth=11; calYear--; } renderCalendar(); });
+			if(calNext) calNext.addEventListener('click', ()=>{ calMonth++; if(calMonth>11){ calMonth=0; calYear++; } renderCalendar(); });
+
 
 			function beep(){ try{ const ctx = new (window.AudioContext||window.webkitAudioContext)(); const o = ctx.createOscillator(); const g = ctx.createGain(); o.type='sine'; o.frequency.value = 880; g.gain.value = 0.0001; o.connect(g); g.connect(ctx.destination); g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.02); o.start(); g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 1.2); setTimeout(()=>{ o.stop(); ctx.close(); }, 1300); }catch(e){/* ignore */} }
 
